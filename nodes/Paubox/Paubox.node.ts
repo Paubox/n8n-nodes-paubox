@@ -489,17 +489,17 @@ export class Paubox implements INodeType {
 							(body.data as IDataObject).unsubscribe_url = additionalFields.unsubscribeUrl;
 						}
 
-						// Make API request
-						const response = await this.helpers.request({
-							method: 'POST',
-							url: `${baseUrl}/messages`,
-							headers: {
-								'Authorization': `Token token=${apiKey}`,
-								'Content-Type': 'application/json',
-							},
-							body,
-							json: true,
-						});
+					// Make API request
+					const response = await this.helpers.httpRequest({
+						method: 'POST',
+						url: `${baseUrl}/messages`,
+						headers: {
+							'Authorization': `Token token=${apiKey}`,
+							'Content-Type': 'application/json',
+						},
+						body,
+						json: true,
+					});
 
 						returnData.push({
 							json: response as IDataObject,
@@ -509,18 +509,18 @@ export class Paubox implements INodeType {
 						// Get tracking ID
 						const sourceTrackingId = this.getNodeParameter('sourceTrackingId', i) as string;
 
-						// Make API request
-						const response = await this.helpers.request({
-							method: 'GET',
-							url: `${baseUrl}/message_receipt`,
-							headers: {
-								'Authorization': `Token token=${apiKey}`,
-							},
-							qs: {
-								sourceTrackingId,
-							},
-							json: true,
-						});
+					// Make API request
+					const response = await this.helpers.httpRequest({
+						method: 'GET',
+						url: `${baseUrl}/message_receipt`,
+						headers: {
+							'Authorization': `Token token=${apiKey}`,
+						},
+						qs: {
+							sourceTrackingId,
+						},
+						json: true,
+					});
 
 						returnData.push({
 							json: response as IDataObject,
