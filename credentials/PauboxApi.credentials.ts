@@ -8,7 +8,8 @@ import {
 export class PauboxApi implements ICredentialType {
 	name = 'pauboxApi';
 	displayName = 'Paubox API';
-	documentationUrl = 'https://docs.paubox.com/';
+	// eslint-disable-next-line n8n-nodes-base/cred-class-field-documentation-url-miscased
+	documentationUrl = 'https://www.paubox.com/solutions/email-api';
 	properties: INodeProperties[] = [
 		{
 			displayName: 'API Username',

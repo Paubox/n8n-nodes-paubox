@@ -1,0 +1,41 @@
+# Source files (only publish dist/)
+nodes/
+credentials/
+*.ts
+!*.d.ts
+
+# Development files
+.eslintrc.js
+tsconfig.json
+.git/
+.gitignore
+*.tsbuildinfo
+
+# Documentation (optional - remove if you want to include)
+reference/
+
+# Development dependencies
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Testing
+test/
+*.test.ts
+*.spec.ts
+coverage/
+

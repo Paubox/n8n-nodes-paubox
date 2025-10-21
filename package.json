@@ -12,12 +12,12 @@
   "license": "MIT",
   "homepage": "https://github.com/yourusername/n8n-nodes-paubox",
   "author": {
-    "name": "Your Name",
-    "email": "your.email@example.com"
+    "name": "Paubox Engineering",
+    "email": "support@paubox.com"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/n8n-nodes-paubox.git"
+    "url": "git+https://github.com/Paubox/n8n-nodes-paubox.git"
   },
   "main": "dist/index.js",
   "scripts": {
