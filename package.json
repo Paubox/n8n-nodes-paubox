@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-paubox",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "n8n node for Paubox Email API - Send HIPAA-compliant email",
   "keywords": [
     "n8n-community-node-package",
@@ -22,7 +22,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && npm run copy-images",
-    "copy-images": "copyfiles -u 1 \"nodes/**/*.{png,svg}\" dist/",
+    "copy-images": "copyfiles -u 0 \"nodes/**/*.{png,svg}\" dist/",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials --ext .ts",
