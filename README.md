@@ -273,3 +273,8 @@ If you encounter any issues or have questions:
 ## Disclaimer
 
 This is a community-created node and is not officially supported by Paubox or n8n. Use at your own discretion.
+## 💬 Community & support
+
+Questions, ideas, or want to share what you built? Join the **[Paubox Community](https://github.com/Paubox/community/discussions)** — the single home for discussions across every Paubox SDK and API.
+
+🔐 Found a security issue? Email **devops@paubox.com** — please don't post it publicly.
