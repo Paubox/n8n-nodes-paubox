@@ -80,9 +80,9 @@ The node should appear in the n8n editor as "Paubox" after restart.
 ## Dependencies / external services
 
 - `n8n-workflow` — peer dependency, provided by the host n8n install.
-- Paubox Email API (`api.paubox.net`) — the only external service. No
-  other Paubox infrastructure (Graylog, Sentry, internal LDAP, etc.) is
-  involved; this repo is fully external-facing.
+- Paubox Email API (`api.paubox.net`) — the only external service this repo
+  talks to. Nothing else needs to be reachable to build, test, or run the
+  node; it is fully external-facing.
 
 ## Conventions
 
