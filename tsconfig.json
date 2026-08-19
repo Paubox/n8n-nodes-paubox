@@ -15,6 +15,7 @@
     "incremental": true
   },
   "include": [
+    "index.ts",
     "nodes/**/*",
     "credentials/**/*"
   ],
