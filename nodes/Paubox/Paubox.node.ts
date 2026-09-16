@@ -649,8 +649,11 @@ export class Paubox implements INodeType {
 						displayName: 'Limit',
 						name: 'limit',
 						type: 'number',
+						typeOptions: {
+							minValue: 1,
+						},
 						default: 50,
-						description: 'Maximum number of results to return',
+						description: 'Max number of results to return',
 					},
 				],
 			},
