@@ -15,7 +15,7 @@ export class Paubox implements INodeType {
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-		description: 'Send HIPAA-compliant email via Paubox Email API',
+		description: 'Send and receive HIPAA-compliant email via Paubox Email API',
 		defaults: {
 			name: 'Paubox',
 		},
@@ -35,12 +35,26 @@ export class Paubox implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
+						name: 'Mailbox',
+						value: 'mailbox',
+					},
+					{
 						name: 'Message',
 						value: 'message',
+					},
+					{
+						name: 'Received Email',
+						value: 'receivedEmail',
+					},
+					{
+						name: 'Receiving Domain',
+						value: 'receivingDomain',
 					},
 				],
 				default: 'message',
 			},
+
+			// Message Operations
 			{
 				displayName: 'Operation',
 				name: 'operation',
@@ -53,22 +67,138 @@ export class Paubox implements INodeType {
 				},
 				options: [
 					{
-						name: 'Send',
-						value: 'send',
-						description: 'Send an email message',
-						action: 'Send a message',
-					},
-					{
 						name: 'Get Disposition',
 						value: 'getDisposition',
 						description: 'Get email delivery status and tracking information',
 						action: 'Get message disposition',
 					},
+					{
+						name: 'Send',
+						value: 'send',
+						description: 'Send an email message',
+						action: 'Send a message',
+					},
 				],
 				default: 'send',
 			},
 
-			// Send Message Fields
+			// Mailbox Operations
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['mailbox'],
+					},
+				},
+				options: [
+					{
+						name: 'Create',
+						value: 'create',
+						description: 'Create a mailbox on a receiving domain',
+						action: 'Create a mailbox',
+					},
+					{
+						name: 'Delete',
+						value: 'delete',
+						description: 'Delete a mailbox',
+						action: 'Delete a mailbox',
+					},
+					{
+						name: 'Get',
+						value: 'get',
+						description: 'Get a mailbox',
+						action: 'Get a mailbox',
+					},
+					{
+						name: 'List',
+						value: 'list',
+						description: 'List mailboxes on a receiving domain',
+						action: 'List mailboxes',
+					},
+				],
+				default: 'list',
+			},
+
+			// Received Email Operations
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['receivedEmail'],
+					},
+				},
+				options: [
+					{
+						name: 'Download Attachment',
+						value: 'downloadAttachment',
+						description: 'Download an email attachment',
+						action: 'Download an attachment',
+					},
+					{
+						name: 'Get',
+						value: 'get',
+						description: 'Get a received email',
+						action: 'Get a received email',
+					},
+					{
+						name: 'List',
+						value: 'list',
+						description: 'List received emails',
+						action: 'List received emails',
+					},
+				],
+				default: 'list',
+			},
+
+			// Receiving Domain Operations
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['receivingDomain'],
+					},
+				},
+				options: [
+					{
+						name: 'Create',
+						value: 'create',
+						description: 'Create a receiving domain',
+						action: 'Create a receiving domain',
+					},
+					{
+						name: 'Delete',
+						value: 'delete',
+						description: 'Delete a receiving domain',
+						action: 'Delete a receiving domain',
+					},
+					{
+						name: 'Get',
+						value: 'get',
+						description: 'Get a receiving domain',
+						action: 'Get a receiving domain',
+					},
+					{
+						name: 'List',
+						value: 'list',
+						description: 'List receiving domains',
+						action: 'List receiving domains',
+					},
+				],
+				default: 'list',
+			},
+
+			// -----------------------------------------------
+			// Message Fields
+			// -----------------------------------------------
 			{
 				displayName: 'From',
 				name: 'from',
@@ -174,8 +304,6 @@ export class Paubox implements INodeType {
 				default: '',
 				description: 'HTML content of the email',
 			},
-
-			// Additional Options
 			{
 				displayName: 'Additional Fields',
 				name: 'additionalFields',
@@ -336,8 +464,6 @@ export class Paubox implements INodeType {
 				},
 			],
 			},
-
-			// Get Disposition Fields
 			{
 				displayName: 'Source Tracking ID',
 				name: 'sourceTrackingId',
@@ -352,6 +478,184 @@ export class Paubox implements INodeType {
 				default: '',
 				placeholder: '6e1cf9a4-7bde-4834-8200-ed424b50c8a7',
 				description: 'The tracking ID returned when the message was sent',
+			},
+
+			// -----------------------------------------------
+			// Receiving Domain Fields
+			// -----------------------------------------------
+			{
+				displayName: 'Domain ID',
+				name: 'domainId',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['receivingDomain'],
+						operation: ['get', 'delete'],
+					},
+				},
+				default: '',
+				description: 'ID of the receiving domain',
+			},
+			{
+				displayName: 'Slug',
+				name: 'slug',
+				type: 'string',
+				displayOptions: {
+					show: {
+						resource: ['receivingDomain'],
+						operation: ['create'],
+					},
+				},
+				default: '',
+				description: 'Domain slug',
+			},
+
+			// -----------------------------------------------
+			// Mailbox Fields
+			// -----------------------------------------------
+			{
+				displayName: 'Domain ID',
+				name: 'domainId',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['mailbox'],
+					},
+				},
+				default: '',
+				description: 'ID of the receiving domain that owns this mailbox',
+			},
+			{
+				displayName: 'Mailbox ID',
+				name: 'mailboxId',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['mailbox'],
+						operation: ['get', 'delete'],
+					},
+				},
+				default: '',
+				description: 'ID of the mailbox',
+			},
+			{
+				displayName: 'Name',
+				name: 'mailboxName',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['mailbox'],
+						operation: ['create'],
+					},
+				},
+				default: '',
+				placeholder: 'user',
+				description: 'Mailbox name (local part of the email address)',
+			},
+			{
+				displayName: 'Password',
+				name: 'mailboxPassword',
+				type: 'string',
+				typeOptions: {
+					password: true,
+				},
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['mailbox'],
+						operation: ['create'],
+					},
+				},
+				default: '',
+				description: 'Mailbox password',
+			},
+			{
+				displayName: 'Quota Bytes',
+				name: 'quotaBytes',
+				type: 'number',
+				displayOptions: {
+					show: {
+						resource: ['mailbox'],
+						operation: ['create'],
+					},
+				},
+				default: 0,
+				description: 'Mailbox storage quota in bytes (0 for unlimited)',
+			},
+
+			// -----------------------------------------------
+			// Received Email Fields
+			// -----------------------------------------------
+			{
+				displayName: 'Email ID',
+				name: 'emailId',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['receivedEmail'],
+						operation: ['get', 'downloadAttachment'],
+					},
+				},
+				default: '',
+				description: 'ID of the received email',
+			},
+			{
+				displayName: 'Blob ID',
+				name: 'blobId',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['receivedEmail'],
+						operation: ['downloadAttachment'],
+					},
+				},
+				default: '',
+				description: 'ID of the attachment blob to download',
+			},
+			{
+				displayName: 'Additional Fields',
+				name: 'additionalFields',
+				type: 'collection',
+				placeholder: 'Add Field',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['receivedEmail'],
+						operation: ['list'],
+					},
+				},
+				options: [
+					{
+						displayName: 'After',
+						name: 'after',
+						type: 'string',
+						default: '',
+						description: 'Cursor for pagination (fetch results after this point)',
+					},
+					{
+						displayName: 'Before',
+						name: 'before',
+						type: 'string',
+						default: '',
+						description: 'Cursor for pagination (fetch results before this point)',
+					},
+					{
+						displayName: 'Limit',
+						name: 'limit',
+						type: 'number',
+						typeOptions: {
+							minValue: 1,
+						},
+						default: 50,
+						description: 'Max number of results to return',
+					},
+				],
 			},
 		],
 	};
@@ -372,16 +676,13 @@ export class Paubox implements INodeType {
 			try {
 				if (resource === 'message') {
 					if (operation === 'send') {
-						// Get required fields
 						const from = this.getNodeParameter('from', i) as string;
 						const to = this.getNodeParameter('to', i) as string;
 						const subject = this.getNodeParameter('subject', i) as string;
 						const contentType = this.getNodeParameter('contentType', i) as string;
 
-						// Parse recipients
 						const recipients = to.split(',').map((email) => email.trim());
 
-						// Get content based on type
 						const content: IDataObject = {};
 						if (contentType === 'text' || contentType === 'both') {
 							content['text/plain'] = this.getNodeParameter('textContent', i) as string;
@@ -390,7 +691,6 @@ export class Paubox implements INodeType {
 							content['text/html'] = this.getNodeParameter('htmlContent', i) as string;
 						}
 
-						// Validate content
 						if (Object.keys(content).length === 0) {
 							throw new NodeOperationError(
 								this.getNode(),
@@ -399,16 +699,13 @@ export class Paubox implements INodeType {
 							);
 						}
 
-						// Build message headers
 						const headers: IDataObject = {
 							subject,
 							from,
 						};
 
-						// Get additional fields
 						const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
 
-						// Add optional headers
 						if (additionalFields.replyTo) {
 							headers['reply-to'] = additionalFields.replyTo;
 						}
@@ -416,7 +713,6 @@ export class Paubox implements INodeType {
 							headers['List-Unsubscribe'] = additionalFields.listUnsubscribe;
 						}
 
-						// Add custom headers
 						if (additionalFields.customHeaders) {
 							const customHeadersData = additionalFields.customHeaders as IDataObject;
 							const headerArray = customHeadersData.header as IDataObject[];
@@ -429,28 +725,24 @@ export class Paubox implements INodeType {
 							}
 						}
 
-						// Build message object
 						const message: IDataObject = {
 							recipients,
 							headers,
 							content,
 						};
 
-						// Add CC
 						if (additionalFields.cc) {
 							message.cc = (additionalFields.cc as string)
 								.split(',')
 								.map((email) => email.trim());
 						}
 
-						// Add BCC
 						if (additionalFields.bcc) {
 							message.bcc = (additionalFields.bcc as string)
 								.split(',')
 								.map((email) => email.trim());
 						}
 
-						// Add boolean flags
 						if (additionalFields.allowNonTLS !== undefined) {
 							message.allowNonTLS = additionalFields.allowNonTLS;
 						}
@@ -458,7 +750,6 @@ export class Paubox implements INodeType {
 							message.forceSecureNotification = additionalFields.forceSecureNotification;
 						}
 
-						// Add attachments
 						if (additionalFields.attachments) {
 							const attachmentsData = additionalFields.attachments as IDataObject;
 							const attachmentArray = attachmentsData.attachment as IDataObject[];
@@ -471,14 +762,12 @@ export class Paubox implements INodeType {
 							}
 						}
 
-						// Build request body
 						const body: IDataObject = {
 							data: {
 								message,
 							},
 						};
 
-						// Add tracking overrides at data level
 						if (additionalFields.overrideOpenTracking !== undefined) {
 							(body.data as IDataObject).override_open_tracking = additionalFields.overrideOpenTracking;
 						}
@@ -489,38 +778,245 @@ export class Paubox implements INodeType {
 							(body.data as IDataObject).unsubscribe_url = additionalFields.unsubscribeUrl;
 						}
 
-					// Make API request
-					const response = await this.helpers.httpRequest({
-						method: 'POST',
-						url: `${baseUrl}/messages`,
-						headers: {
-							'Authorization': `Token token=${apiKey}`,
-							'Content-Type': 'application/json',
-						},
-						body,
-						json: true,
-					});
+						const response = await this.helpers.httpRequest({
+							method: 'POST',
+							url: `${baseUrl}/messages`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+								'Content-Type': 'application/json',
+							},
+							body,
+							json: true,
+						});
 
 						returnData.push({
 							json: response as IDataObject,
 							pairedItem: { item: i },
 						});
 					} else if (operation === 'getDisposition') {
-						// Get tracking ID
 						const sourceTrackingId = this.getNodeParameter('sourceTrackingId', i) as string;
 
-					// Make API request
-					const response = await this.helpers.httpRequest({
-						method: 'GET',
-						url: `${baseUrl}/message_receipt`,
-						headers: {
-							'Authorization': `Token token=${apiKey}`,
-						},
-						qs: {
-							sourceTrackingId,
-						},
-						json: true,
-					});
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}/message_receipt`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							qs: {
+								sourceTrackingId,
+							},
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					}
+				} else if (resource === 'receivingDomain') {
+					if (operation === 'list') {
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}/receiving/domains`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'create') {
+						const slug = this.getNodeParameter('slug', i, '') as string;
+						const body: IDataObject = {};
+						if (slug) {
+							body.slug = slug;
+						}
+
+						const response = await this.helpers.httpRequest({
+							method: 'POST',
+							url: `${baseUrl}/receiving/domains`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+								'Content-Type': 'application/json',
+							},
+							body,
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'get') {
+						const domainId = this.getNodeParameter('domainId', i) as string;
+
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}/receiving/domains/${domainId}`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'delete') {
+						const domainId = this.getNodeParameter('domainId', i) as string;
+
+						const response = await this.helpers.httpRequest({
+							method: 'DELETE',
+							url: `${baseUrl}/receiving/domains/${domainId}`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					}
+				} else if (resource === 'mailbox') {
+					const domainId = this.getNodeParameter('domainId', i) as string;
+
+					if (operation === 'list') {
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}/receiving/domains/${domainId}/mailboxes`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'create') {
+						const mailboxName = this.getNodeParameter('mailboxName', i) as string;
+						const mailboxPassword = this.getNodeParameter('mailboxPassword', i) as string;
+						const quotaBytes = this.getNodeParameter('quotaBytes', i, 0) as number;
+
+						const body: IDataObject = {
+							name: mailboxName,
+							password: mailboxPassword,
+						};
+						if (quotaBytes > 0) {
+							body.quota_bytes = quotaBytes;
+						}
+
+						const response = await this.helpers.httpRequest({
+							method: 'POST',
+							url: `${baseUrl}/receiving/domains/${domainId}/mailboxes`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+								'Content-Type': 'application/json',
+							},
+							body,
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'get') {
+						const mailboxId = this.getNodeParameter('mailboxId', i) as string;
+
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}/receiving/domains/${domainId}/mailboxes/${mailboxId}`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'delete') {
+						const mailboxId = this.getNodeParameter('mailboxId', i) as string;
+
+						const response = await this.helpers.httpRequest({
+							method: 'DELETE',
+							url: `${baseUrl}/receiving/domains/${domainId}/mailboxes/${mailboxId}`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					}
+				} else if (resource === 'receivedEmail') {
+					if (operation === 'list') {
+						const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
+						const qs: IDataObject = {};
+						if (additionalFields.limit) {
+							qs.limit = additionalFields.limit;
+						}
+						if (additionalFields.after) {
+							qs.after = additionalFields.after;
+						}
+						if (additionalFields.before) {
+							qs.before = additionalFields.before;
+						}
+
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}/receiving`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							qs,
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'get') {
+						const emailId = this.getNodeParameter('emailId', i) as string;
+
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}/receiving/${emailId}`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'downloadAttachment') {
+						const emailId = this.getNodeParameter('emailId', i) as string;
+						const blobId = this.getNodeParameter('blobId', i) as string;
+
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}/receiving/${emailId}/attachments/${blobId}`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							json: true,
+						});
 
 						returnData.push({
 							json: response as IDataObject,
@@ -546,4 +1042,3 @@ export class Paubox implements INodeType {
 		return [returnData];
 	}
 }
-
