@@ -50,6 +50,10 @@ export class Paubox implements INodeType {
 						name: 'Receiving Domain',
 						value: 'receivingDomain',
 					},
+					{
+						name: 'Webhook Endpoint',
+						value: 'webhookEndpoint',
+					},
 				],
 				default: 'message',
 			},
@@ -191,6 +195,52 @@ export class Paubox implements INodeType {
 						value: 'list',
 						description: 'List receiving domains',
 						action: 'List receiving domains',
+					},
+				],
+				default: 'list',
+			},
+
+			// Webhook Endpoint Operations
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['webhookEndpoint'],
+					},
+				},
+				options: [
+					{
+						name: 'Create',
+						value: 'create',
+						description: 'Create a webhook endpoint',
+						action: 'Create a webhook endpoint',
+					},
+					{
+						name: 'Delete',
+						value: 'delete',
+						description: 'Delete a webhook endpoint',
+						action: 'Delete a webhook endpoint',
+					},
+					{
+						name: 'Get',
+						value: 'get',
+						description: 'Get a webhook endpoint',
+						action: 'Get a webhook endpoint',
+					},
+					{
+						name: 'List',
+						value: 'list',
+						description: 'List webhook endpoints',
+						action: 'List webhook endpoints',
+					},
+					{
+						name: 'Update',
+						value: 'update',
+						description: 'Update a webhook endpoint',
+						action: 'Update a webhook endpoint',
 					},
 				],
 				default: 'list',
@@ -657,6 +707,165 @@ export class Paubox implements INodeType {
 					},
 				],
 			},
+
+			// -----------------------------------------------
+			// Webhook Endpoint Fields
+			// -----------------------------------------------
+			{
+				displayName: 'Endpoint ID',
+				name: 'webhookEndpointId',
+				type: 'number',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['webhookEndpoint'],
+						operation: ['get', 'update', 'delete'],
+					},
+				},
+				default: 0,
+				description: 'ID of the webhook endpoint',
+			},
+			{
+				displayName: 'Target URL',
+				name: 'targetUrl',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['webhookEndpoint'],
+						operation: ['create'],
+					},
+				},
+				default: '',
+				placeholder: 'https://example.com/webhooks',
+				description: 'URL that will receive webhook event payloads',
+			},
+			{
+				displayName: 'Events',
+				name: 'webhookEvents',
+				type: 'multiOptions',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['webhookEndpoint'],
+						operation: ['create'],
+					},
+				},
+				options: [
+					{
+						name: 'Delivered',
+						value: 'api_mail_log_delivered',
+					},
+					{
+						name: 'Inbound Mail Received',
+						value: 'inbound_mail_received',
+					},
+					{
+						name: 'Opened',
+						value: 'api_mail_log_opened',
+					},
+					{
+						name: 'Permanent Failure',
+						value: 'api_mail_log_permanent_failure',
+					},
+					{
+						name: 'Temporary Failure',
+						value: 'api_mail_log_temporary_failure',
+					},
+				],
+				default: [],
+				description: 'Event types to subscribe to',
+			},
+			{
+				displayName: 'Additional Fields',
+				name: 'additionalFields',
+				type: 'collection',
+				placeholder: 'Add Field',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['webhookEndpoint'],
+						operation: ['create'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Active',
+						name: 'active',
+						type: 'boolean',
+						default: true,
+						description: 'Whether the webhook endpoint is active',
+					},
+					{
+						displayName: 'Signing Key',
+						name: 'signingKey',
+						type: 'string',
+						typeOptions: {
+							password: true,
+						},
+						default: '',
+						description: 'Key used to sign webhook payloads for verification',
+					},
+				],
+			},
+			{
+				displayName: 'Update Fields',
+				name: 'updateFields',
+				type: 'collection',
+				placeholder: 'Add Field',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['webhookEndpoint'],
+						operation: ['update'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Active',
+						name: 'active',
+						type: 'boolean',
+						default: true,
+						description: 'Whether the webhook endpoint is active',
+					},
+					{
+						displayName: 'Events',
+						name: 'events',
+						type: 'multiOptions',
+						options: [
+							{
+								name: 'Delivered',
+								value: 'api_mail_log_delivered',
+							},
+							{
+								name: 'Inbound Mail Received',
+								value: 'inbound_mail_received',
+							},
+							{
+								name: 'Opened',
+								value: 'api_mail_log_opened',
+							},
+							{
+								name: 'Permanent Failure',
+								value: 'api_mail_log_permanent_failure',
+							},
+							{
+								name: 'Temporary Failure',
+								value: 'api_mail_log_temporary_failure',
+							},
+						],
+						default: [],
+						description: 'New set of event types',
+					},
+					{
+						displayName: 'Target URL',
+						name: 'targetUrl',
+						type: 'string',
+						default: '',
+						description: 'New target URL',
+					},
+				],
+			},
 		],
 	};
 
@@ -1012,6 +1221,124 @@ export class Paubox implements INodeType {
 						const response = await this.helpers.httpRequest({
 							method: 'GET',
 							url: `${baseUrl}/receiving/${emailId}/attachments/${blobId}`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					}
+				} else if (resource === 'webhookEndpoint') {
+					if (operation === 'list') {
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}/webhook_endpoints`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							json: true,
+						});
+
+						if (Array.isArray(response)) {
+							for (const item of response) {
+								returnData.push({
+									json: item as IDataObject,
+									pairedItem: { item: i },
+								});
+							}
+						} else {
+							returnData.push({
+								json: response as IDataObject,
+								pairedItem: { item: i },
+							});
+						}
+					} else if (operation === 'create') {
+						const targetUrl = this.getNodeParameter('targetUrl', i) as string;
+						const events = this.getNodeParameter('webhookEvents', i) as string[];
+						const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
+
+						const body: IDataObject = {
+							target_url: targetUrl,
+							events,
+						};
+						if (additionalFields.signingKey) {
+							body.signing_key = additionalFields.signingKey;
+						}
+						if (additionalFields.active !== undefined) {
+							body.active = additionalFields.active;
+						}
+
+						const response = await this.helpers.httpRequest({
+							method: 'POST',
+							url: `${baseUrl}/webhook_endpoints`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+								'Content-Type': 'application/json',
+							},
+							body,
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'get') {
+						const endpointId = this.getNodeParameter('webhookEndpointId', i) as number;
+
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}/webhook_endpoints/${endpointId}`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+							},
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'update') {
+						const endpointId = this.getNodeParameter('webhookEndpointId', i) as number;
+						const updateFields = this.getNodeParameter('updateFields', i) as IDataObject;
+
+						const body: IDataObject = {};
+						if (updateFields.targetUrl) {
+							body.target_url = updateFields.targetUrl;
+						}
+						if (updateFields.events) {
+							body.events = updateFields.events;
+						}
+						if (updateFields.active !== undefined) {
+							body.active = updateFields.active;
+						}
+
+						const response = await this.helpers.httpRequest({
+							method: 'PATCH',
+							url: `${baseUrl}/webhook_endpoints/${endpointId}`,
+							headers: {
+								'Authorization': `Token token=${apiKey}`,
+								'Content-Type': 'application/json',
+							},
+							body,
+							json: true,
+						});
+
+						returnData.push({
+							json: response as IDataObject,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'delete') {
+						const endpointId = this.getNodeParameter('webhookEndpointId', i) as number;
+
+						const response = await this.helpers.httpRequest({
+							method: 'DELETE',
+							url: `${baseUrl}/webhook_endpoints/${endpointId}`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 							},
