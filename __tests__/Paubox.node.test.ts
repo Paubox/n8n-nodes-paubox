@@ -495,6 +495,31 @@ describe('Paubox Node', () => {
 		});
 	});
 
+	describe('webhookEndpoint events', () => {
+		const VALID_EVENTS = [
+			'api_mail_log_delivered',
+			'api_mail_log_opened',
+			'api_mail_log_permanent_failure',
+			'api_mail_log_temporary_failure',
+		];
+
+		it('should only offer the events the API accepts on create', () => {
+			const prop = findProperty('webhookEvents', 'webhookEndpoint');
+			const values = (prop!.options as Array<{ value: string }>).map((o) => o.value);
+			expect(values).toEqual(VALID_EVENTS);
+			expect(prop!.hint).toMatch(/Paubox Dashboard/);
+		});
+
+		it('should only offer the events the API accepts on update', () => {
+			const updateFields = findProperty('updateFields', 'webhookEndpoint');
+			const events = (updateFields!.options as Array<{ name: string; options?: Array<{ value: string }>; hint?: string }>).find(
+				(o) => o.name === 'events',
+			);
+			expect(events!.options!.map((o) => o.value)).toEqual(VALID_EVENTS);
+			expect(events!.hint).toMatch(/Paubox Dashboard/);
+		});
+	});
+
 	describe('error handling', () => {
 		it('should throw on API error when continueOnFail is false', async () => {
 			const ctx = createMockContext({

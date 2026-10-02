@@ -763,10 +763,6 @@ export class Paubox implements INodeType {
 						value: 'api_mail_log_delivered',
 					},
 					{
-						name: 'Inbound Mail Received',
-						value: 'inbound_mail_received',
-					},
-					{
 						name: 'Opened',
 						value: 'api_mail_log_opened',
 					},
@@ -781,6 +777,7 @@ export class Paubox implements INodeType {
 				],
 				default: [],
 				description: 'Event types to subscribe to',
+				hint: 'Inbound mail subscriptions are set up in the Paubox Dashboard',
 			},
 			{
 				displayName: 'Additional Fields',
@@ -844,10 +841,6 @@ export class Paubox implements INodeType {
 								value: 'api_mail_log_delivered',
 							},
 							{
-								name: 'Inbound Mail Received',
-								value: 'inbound_mail_received',
-							},
-							{
 								name: 'Opened',
 								value: 'api_mail_log_opened',
 							},
@@ -862,6 +855,7 @@ export class Paubox implements INodeType {
 						],
 						default: [],
 						description: 'New set of event types',
+						hint: 'Inbound mail subscriptions are set up in the Paubox Dashboard',
 					},
 					{
 						displayName: 'Target URL',
