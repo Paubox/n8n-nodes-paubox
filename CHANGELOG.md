@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/Paubox/n8n-nodes-paubox/compare/v1.2.0...v1.2.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* **receiving:** match the UUID-based receiving API ([#20](https://github.com/Paubox/n8n-nodes-paubox/issues/20)) ([2348b99](https://github.com/Paubox/n8n-nodes-paubox/commit/2348b994f19dd931d659bb86401fbdee9b1f3570))
+
 ## [1.2.0](https://github.com/Paubox/n8n-nodes-paubox/compare/v1.1.0...v1.2.0) (2026-09-17)
 
 
