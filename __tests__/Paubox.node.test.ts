@@ -3,10 +3,19 @@ import { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow
 
 const CREDENTIALS = { apiUsername: 'testuser', apiKey: 'test-api-key-123' };
 const BASE_URL = `https://api.paubox.net/v1/${CREDENTIALS.apiUsername}`;
+const EMAIL_BASE_URL = 'https://api.paubox.com/v1/email';
+const EMAIL_ID = '0192f0c4-0000-7000-8000-000000000001';
+const NEWER_EMAIL_ID = '0192f0c4-0000-7000-8000-000000000002';
+const ATTACHMENT_ID = '0192f0c4-0000-7000-8000-0000000000a1';
 const AUTH_HEADER = `Token token=${CREDENTIALS.apiKey}`;
 
 function createMockContext(params: Record<string, unknown>): IExecuteFunctions {
 	const httpRequest = jest.fn().mockResolvedValue({ success: true });
+	const prepareBinaryData = jest.fn(async (data: Buffer, fileName?: string, mimeType?: string) => ({
+		data: data.toString('base64'),
+		fileName,
+		mimeType: mimeType ?? 'application/octet-stream',
+	}));
 
 	return {
 		getInputData: () => [{ json: {} }],
@@ -18,7 +27,7 @@ function createMockContext(params: Record<string, unknown>): IExecuteFunctions {
 		getCredentials: jest.fn().mockResolvedValue(CREDENTIALS),
 		getNode: () => ({ name: 'Paubox', type: 'paubox', typeVersion: 1, position: [0, 0], parameters: {} }),
 		continueOnFail: () => false,
-		helpers: { httpRequest },
+		helpers: { httpRequest, prepareBinaryData },
 	} as unknown as IExecuteFunctions;
 }
 
@@ -26,11 +35,22 @@ function getHttpRequest(ctx: IExecuteFunctions) {
 	return (ctx.helpers as unknown as { httpRequest: jest.Mock }).httpRequest;
 }
 
-async function runNode(params: Record<string, unknown>): Promise<{ result: INodeExecutionData[][]; httpRequest: jest.Mock }> {
+async function runNode(
+	params: Record<string, unknown>,
+	response?: unknown,
+): Promise<{ result: INodeExecutionData[][]; httpRequest: jest.Mock }> {
 	const ctx = createMockContext(params);
+	if (response !== undefined) getHttpRequest(ctx).mockResolvedValue(response);
 	const node = new Paubox();
 	const result = await node.execute.call(ctx);
 	return { result, httpRequest: getHttpRequest(ctx) };
+}
+
+function findProperty(name: string, resource: string) {
+	const node = new Paubox();
+	return node.description.properties.find(
+		(p) => p.name === name && p.displayOptions?.show?.resource?.includes(resource),
+	);
 }
 
 describe('Paubox Node', () => {
@@ -39,7 +59,7 @@ describe('Paubox Node', () => {
 			const node = new Paubox();
 			const resourceProp = node.description.properties.find((p) => p.name === 'resource');
 			const values = (resourceProp!.options as Array<{ value: string }>).map((o) => o.value);
-			expect(values).toEqual(['mailbox', 'message', 'receivedEmail', 'receivingDomain']);
+			expect(values).toEqual(['mailbox', 'message', 'receivedEmail', 'receivingDomain', 'webhookEndpoint']);
 		});
 	});
 
@@ -94,7 +114,7 @@ describe('Paubox Node', () => {
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'GET',
-					url: `${BASE_URL}/receiving/domains`,
+					url: `${EMAIL_BASE_URL}/receiving/domains`,
 					headers: expect.objectContaining({ Authorization: AUTH_HEADER }),
 				}),
 			);
@@ -112,7 +132,7 @@ describe('Paubox Node', () => {
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'POST',
-					url: `${BASE_URL}/receiving/domains`,
+					url: `${EMAIL_BASE_URL}/receiving/domains`,
 					body: { slug: 'my-domain' },
 				}),
 			);
@@ -128,7 +148,7 @@ describe('Paubox Node', () => {
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'POST',
-					url: `${BASE_URL}/receiving/domains`,
+					url: `${EMAIL_BASE_URL}/receiving/domains`,
 					body: {},
 				}),
 			);
@@ -146,7 +166,7 @@ describe('Paubox Node', () => {
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'GET',
-					url: `${BASE_URL}/receiving/domains/42`,
+					url: `${EMAIL_BASE_URL}/receiving/domains/42`,
 				}),
 			);
 		});
@@ -163,7 +183,7 @@ describe('Paubox Node', () => {
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'DELETE',
-					url: `${BASE_URL}/receiving/domains/42`,
+					url: `${EMAIL_BASE_URL}/receiving/domains/42`,
 				}),
 			);
 		});
@@ -180,7 +200,7 @@ describe('Paubox Node', () => {
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'GET',
-					url: `${BASE_URL}/receiving/domains/7/mailboxes`,
+					url: `${EMAIL_BASE_URL}/receiving/domains/7/mailboxes`,
 				}),
 			);
 		});
@@ -200,7 +220,7 @@ describe('Paubox Node', () => {
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'POST',
-					url: `${BASE_URL}/receiving/domains/7/mailboxes`,
+					url: `${EMAIL_BASE_URL}/receiving/domains/7/mailboxes`,
 					body: { name: 'alice', password: 's3cret', quota_bytes: 1048576 },
 				}),
 			);
@@ -236,7 +256,7 @@ describe('Paubox Node', () => {
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'GET',
-					url: `${BASE_URL}/receiving/domains/7/mailboxes/99`,
+					url: `${EMAIL_BASE_URL}/receiving/domains/7/mailboxes/99`,
 				}),
 			);
 		});
@@ -254,25 +274,26 @@ describe('Paubox Node', () => {
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'DELETE',
-					url: `${BASE_URL}/receiving/domains/7/mailboxes/99`,
+					url: `${EMAIL_BASE_URL}/receiving/domains/7/mailboxes/99`,
 				}),
 			);
 		});
 	});
 
 	describe('receivedEmail / list', () => {
-		it('should GET /receiving with query params', async () => {
+		it('should GET /receiving with email_id cursors', async () => {
 			const { httpRequest } = await runNode({
 				resource: 'receivedEmail',
 				operation: 'list',
-				additionalFields: { limit: 10, after: 'cursor-a', before: 'cursor-b' },
+				additionalFields: { limit: 10, after: EMAIL_ID, before: NEWER_EMAIL_ID },
 			});
 
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'GET',
-					url: `${BASE_URL}/receiving`,
-					qs: { limit: 10, after: 'cursor-a', before: 'cursor-b' },
+					url: `${EMAIL_BASE_URL}/receiving`,
+					headers: expect.objectContaining({ Authorization: AUTH_HEADER }),
+					qs: { limit: 10, after: EMAIL_ID, before: NEWER_EMAIL_ID },
 				}),
 			);
 		});
@@ -287,45 +308,190 @@ describe('Paubox Node', () => {
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'GET',
-					url: `${BASE_URL}/receiving`,
+					url: `${EMAIL_BASE_URL}/receiving`,
 					qs: {},
 				}),
 			);
+		});
+
+		it('should return the list envelope as-is', async () => {
+			const page = {
+				object: 'list',
+				data: [
+					{
+						email_id: EMAIL_ID,
+						from: [{ name: 'Alice', address: 'alice@example.com' }],
+						to: [{ name: null, address: 'inbox@acme.paubox.email' }],
+						subject: 'Lab results',
+						received_at: '2026-10-01T12:00:00Z',
+						has_attachment: true,
+						spam: false,
+						size: 2048,
+						domain: 'acme.paubox.email',
+					},
+				],
+				has_more: false,
+			};
+
+			const { result } = await runNode(
+				{ resource: 'receivedEmail', operation: 'list', additionalFields: {} },
+				page,
+			);
+
+			expect(result[0][0].json).toEqual(page);
 		});
 	});
 
 	describe('receivedEmail / get', () => {
 		it('should GET /receiving/:emailId', async () => {
-			const { httpRequest } = await runNode({
-				resource: 'receivedEmail',
-				operation: 'get',
-				emailId: 'msg-555',
-			});
+			const detail = {
+				data: {
+					email_id: EMAIL_ID,
+					from: [{ name: 'Alice', address: 'alice@example.com' }],
+					to: [{ name: null, address: 'inbox@acme.paubox.email' }],
+					cc: [],
+					subject: 'Lab results',
+					attachments: [
+						{
+							id: ATTACHMENT_ID,
+							filename: 'results.pdf',
+							content_type: 'application/pdf',
+							size: 1024,
+							content_id: null,
+							download_url: `${EMAIL_BASE_URL}/receiving/downloads/token`,
+						},
+					],
+					spam: false,
+					domain: 'acme.paubox.email',
+				},
+			};
+
+			const { result, httpRequest } = await runNode(
+				{ resource: 'receivedEmail', operation: 'get', emailId: EMAIL_ID },
+				detail,
+			);
 
 			expect(httpRequest).toHaveBeenCalledWith(
 				expect.objectContaining({
 					method: 'GET',
-					url: `${BASE_URL}/receiving/msg-555`,
+					url: `${EMAIL_BASE_URL}/receiving/${EMAIL_ID}`,
+					headers: expect.objectContaining({ Authorization: AUTH_HEADER }),
 				}),
 			);
+			expect(result[0][0].json).toEqual(detail);
 		});
 	});
 
 	describe('receivedEmail / downloadAttachment', () => {
-		it('should GET /receiving/:emailId/attachments/:blobId', async () => {
-			const { httpRequest } = await runNode({
-				resource: 'receivedEmail',
-				operation: 'downloadAttachment',
-				emailId: 'msg-555',
-				blobId: 'blob-42',
-			});
+		const pdf = Buffer.from('%PDF-1.4 test');
 
-			expect(httpRequest).toHaveBeenCalledWith(
-				expect.objectContaining({
-					method: 'GET',
-					url: `${BASE_URL}/receiving/msg-555/attachments/blob-42`,
-				}),
+		it('should label the blobId parameter as Attachment ID', () => {
+			const prop = findProperty('blobId', 'receivedEmail');
+			expect(prop?.displayName).toBe('Attachment ID');
+			expect(prop?.displayOptions?.show?.operation).toEqual(['downloadAttachment']);
+		});
+
+		it('should GET /receiving/:emailId/attachments/:attachmentId as raw bytes', async () => {
+			const { httpRequest } = await runNode(
+				{
+					resource: 'receivedEmail',
+					operation: 'downloadAttachment',
+					emailId: EMAIL_ID,
+					blobId: ATTACHMENT_ID,
+				},
+				{ body: pdf, headers: { 'content-type': 'application/pdf' }, statusCode: 200 },
 			);
+
+			expect(httpRequest).toHaveBeenCalledWith({
+				method: 'GET',
+				url: `${EMAIL_BASE_URL}/receiving/${EMAIL_ID}/attachments/${ATTACHMENT_ID}`,
+				headers: { Authorization: AUTH_HEADER },
+				encoding: 'arraybuffer',
+				returnFullResponse: true,
+			});
+		});
+
+		it('should return the file as binary data with filename and MIME type', async () => {
+			const { result } = await runNode(
+				{
+					resource: 'receivedEmail',
+					operation: 'downloadAttachment',
+					emailId: EMAIL_ID,
+					blobId: ATTACHMENT_ID,
+				},
+				{
+					body: pdf,
+					headers: {
+						'content-type': 'application/pdf',
+						'content-disposition': 'attachment; filename="results.pdf"',
+					},
+					statusCode: 200,
+				},
+			);
+
+			const item = result[0][0];
+			expect(item.binary?.data).toEqual({
+				data: pdf.toString('base64'),
+				fileName: 'results.pdf',
+				mimeType: 'application/pdf',
+			});
+			expect(item.json).toEqual({
+				email_id: EMAIL_ID,
+				attachment_id: ATTACHMENT_ID,
+				filename: 'results.pdf',
+				content_type: 'application/pdf',
+				size: pdf.length,
+			});
+			expect(item.pairedItem).toEqual({ item: 0 });
+		});
+
+		it('should accept an ArrayBuffer body and strip Content-Type parameters', async () => {
+			const text = Buffer.from('hello');
+			const arrayBuffer = text.buffer.slice(text.byteOffset, text.byteOffset + text.length);
+
+			const { result } = await runNode(
+				{
+					resource: 'receivedEmail',
+					operation: 'downloadAttachment',
+					emailId: EMAIL_ID,
+					blobId: ATTACHMENT_ID,
+				},
+				{
+					body: arrayBuffer,
+					headers: {
+						'content-type': 'text/plain; charset=utf-8',
+						'content-disposition': 'attachment; filename=notes.txt',
+					},
+					statusCode: 200,
+				},
+			);
+
+			expect(result[0][0].binary?.data).toEqual({
+				data: text.toString('base64'),
+				fileName: 'notes.txt',
+				mimeType: 'text/plain',
+			});
+		});
+
+		it('should leave the filename unset when Content-Disposition has none', async () => {
+			const { result } = await runNode(
+				{
+					resource: 'receivedEmail',
+					operation: 'downloadAttachment',
+					emailId: EMAIL_ID,
+					blobId: ATTACHMENT_ID,
+				},
+				{
+					body: pdf,
+					headers: { 'content-type': 'application/octet-stream', 'content-disposition': 'attachment' },
+					statusCode: 200,
+				},
+			);
+
+			const item = result[0][0];
+			expect(item.binary?.data.fileName).toBeUndefined();
+			expect(item.binary?.data.mimeType).toBe('application/octet-stream');
+			expect(item.json.filename).toBeNull();
 		});
 	});
 

@@ -4,8 +4,14 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	IDataObject,
+	IN8nHttpFullResponse,
 	NodeOperationError,
 } from 'n8n-workflow';
+
+function filenameFromContentDisposition(header: string | undefined): string | undefined {
+	const match = header?.match(/(?:^|;)\s*filename\s*=\s*(?:"([^"]*)"|([^;\s]+))/i);
+	return match?.[1] || match?.[2] || undefined;
+}
 
 export class Paubox implements INodeType {
 	description: INodeTypeDescription = {
@@ -141,7 +147,7 @@ export class Paubox implements INodeType {
 					{
 						name: 'Download Attachment',
 						value: 'downloadAttachment',
-						description: 'Download an email attachment',
+						description: 'Download an email attachment as binary data',
 						action: 'Download an attachment',
 					},
 					{
@@ -652,10 +658,10 @@ export class Paubox implements INodeType {
 					},
 				},
 				default: '',
-				description: 'ID of the received email',
+				description: 'Paubox ID (UUID) of the received email, the "email_id" field returned by List',
 			},
 			{
-				displayName: 'Blob ID',
+				displayName: 'Attachment ID',
 				name: 'blobId',
 				type: 'string',
 				required: true,
@@ -666,7 +672,7 @@ export class Paubox implements INodeType {
 					},
 				},
 				default: '',
-				description: 'ID of the attachment blob to download',
+				description: 'Paubox ID (UUID) of the attachment, taken from the received email\'s attachments list',
 			},
 			{
 				displayName: 'Additional Fields',
@@ -686,14 +692,14 @@ export class Paubox implements INodeType {
 						name: 'after',
 						type: 'string',
 						default: '',
-						description: 'Cursor for pagination (fetch results after this point)',
+						description: 'Return the emails that come after this email in the list. Use an "email_id" from a previous page.',
 					},
 					{
 						displayName: 'Before',
 						name: 'before',
 						type: 'string',
 						default: '',
-						description: 'Cursor for pagination (fetch results before this point)',
+						description: 'Return the emails that come before this email in the list. Use an "email_id" from a previous page.',
 					},
 					{
 						displayName: 'Limit',
@@ -880,6 +886,7 @@ export class Paubox implements INodeType {
 		const apiKey = credentials.apiKey as string;
 
 		const baseUrl = `https://api.paubox.net/v1/${apiUsername}`;
+		const emailBaseUrl = 'https://api.paubox.com/v1/email';
 
 		for (let i = 0; i < items.length; i++) {
 			try {
@@ -1026,7 +1033,7 @@ export class Paubox implements INodeType {
 					if (operation === 'list') {
 						const response = await this.helpers.httpRequest({
 							method: 'GET',
-							url: `${baseUrl}/receiving/domains`,
+							url: `${emailBaseUrl}/receiving/domains`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 							},
@@ -1046,7 +1053,7 @@ export class Paubox implements INodeType {
 
 						const response = await this.helpers.httpRequest({
 							method: 'POST',
-							url: `${baseUrl}/receiving/domains`,
+							url: `${emailBaseUrl}/receiving/domains`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 								'Content-Type': 'application/json',
@@ -1064,7 +1071,7 @@ export class Paubox implements INodeType {
 
 						const response = await this.helpers.httpRequest({
 							method: 'GET',
-							url: `${baseUrl}/receiving/domains/${domainId}`,
+							url: `${emailBaseUrl}/receiving/domains/${domainId}`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 							},
@@ -1080,7 +1087,7 @@ export class Paubox implements INodeType {
 
 						const response = await this.helpers.httpRequest({
 							method: 'DELETE',
-							url: `${baseUrl}/receiving/domains/${domainId}`,
+							url: `${emailBaseUrl}/receiving/domains/${domainId}`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 							},
@@ -1098,7 +1105,7 @@ export class Paubox implements INodeType {
 					if (operation === 'list') {
 						const response = await this.helpers.httpRequest({
 							method: 'GET',
-							url: `${baseUrl}/receiving/domains/${domainId}/mailboxes`,
+							url: `${emailBaseUrl}/receiving/domains/${domainId}/mailboxes`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 							},
@@ -1124,7 +1131,7 @@ export class Paubox implements INodeType {
 
 						const response = await this.helpers.httpRequest({
 							method: 'POST',
-							url: `${baseUrl}/receiving/domains/${domainId}/mailboxes`,
+							url: `${emailBaseUrl}/receiving/domains/${domainId}/mailboxes`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 								'Content-Type': 'application/json',
@@ -1142,7 +1149,7 @@ export class Paubox implements INodeType {
 
 						const response = await this.helpers.httpRequest({
 							method: 'GET',
-							url: `${baseUrl}/receiving/domains/${domainId}/mailboxes/${mailboxId}`,
+							url: `${emailBaseUrl}/receiving/domains/${domainId}/mailboxes/${mailboxId}`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 							},
@@ -1158,7 +1165,7 @@ export class Paubox implements INodeType {
 
 						const response = await this.helpers.httpRequest({
 							method: 'DELETE',
-							url: `${baseUrl}/receiving/domains/${domainId}/mailboxes/${mailboxId}`,
+							url: `${emailBaseUrl}/receiving/domains/${domainId}/mailboxes/${mailboxId}`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 							},
@@ -1186,7 +1193,7 @@ export class Paubox implements INodeType {
 
 						const response = await this.helpers.httpRequest({
 							method: 'GET',
-							url: `${baseUrl}/receiving`,
+							url: `${emailBaseUrl}/receiving`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 							},
@@ -1203,7 +1210,7 @@ export class Paubox implements INodeType {
 
 						const response = await this.helpers.httpRequest({
 							method: 'GET',
-							url: `${baseUrl}/receiving/${emailId}`,
+							url: `${emailBaseUrl}/receiving/${emailId}`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 							},
@@ -1216,19 +1223,37 @@ export class Paubox implements INodeType {
 						});
 					} else if (operation === 'downloadAttachment') {
 						const emailId = this.getNodeParameter('emailId', i) as string;
-						const blobId = this.getNodeParameter('blobId', i) as string;
+						const attachmentId = this.getNodeParameter('blobId', i) as string;
 
-						const response = await this.helpers.httpRequest({
+						const response = (await this.helpers.httpRequest({
 							method: 'GET',
-							url: `${baseUrl}/receiving/${emailId}/attachments/${blobId}`,
+							url: `${emailBaseUrl}/receiving/${emailId}/attachments/${attachmentId}`,
 							headers: {
 								'Authorization': `Token token=${apiKey}`,
 							},
-							json: true,
-						});
+							encoding: 'arraybuffer',
+							returnFullResponse: true,
+						})) as IN8nHttpFullResponse;
+
+						const body = response.body;
+						const data = Buffer.isBuffer(body) ? body : Buffer.from(body as ArrayBuffer);
+						const contentType = response.headers['content-type'] as string | undefined;
+						const mimeType = contentType ? contentType.split(';')[0].trim() : undefined;
+						const filename = filenameFromContentDisposition(
+							response.headers['content-disposition'] as string | undefined,
+						);
+
+						const binaryData = await this.helpers.prepareBinaryData(data, filename, mimeType);
 
 						returnData.push({
-							json: response as IDataObject,
+							json: {
+								email_id: emailId,
+								attachment_id: attachmentId,
+								filename: filename ?? null,
+								content_type: mimeType ?? null,
+								size: data.length,
+							},
+							binary: { data: binaryData },
 							pairedItem: { item: i },
 						});
 					}
